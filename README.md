@@ -1,19 +1,55 @@
 # Event & Traffic Monitoring System
 
-An asynchronous, high-throughput **Event and Traffic Monitoring System** built with **Node.js**, **Express.js (v5)**, and **MongoDB (Mongoose)**. This application serves as a backend platform for capturing, queuing, logging, categorizing, and analyzing real-time application events, user interactions, traffic metrics, and system crash logs.
+A backend **Event and Traffic Monitoring System** built with **Node.js**, **Express.js (v5)**, and **MongoDB (Mongoose v9)**. The platform provides structured REST APIs for logging, categorizing, querying, and analyzing real-time application events, system errors, and traffic logs, with an architecture designed to support asynchronous queue-based processing.
+
+---
+
+## 🏗️ System Architecture & Data Flow
+
+```mermaid
+flowchart TD
+    Client["Client / Microservices"] -->|HTTP REST Requests| Express["Express.js Server (v5)"]
+
+    subgraph AppServer ["Application Layer (Active)"]
+        Express --> Router["Express Router (/api/v1)"]
+        Router --> EventCtrl["Event Controller"]
+        Router -.->|Planned Route Protection| AuthMW["Auth Middleware (In Progress)"]
+        EventCtrl --> EventModel["Event Model (Mongoose v9)"]
+        AuthMW -.-> UserModel["User Model (bcrypt + validator)"]
+        AuthMW -.-> TokenUtil["signToken Utility (JWT)"]
+    end
+
+    subgraph DatabaseLayer ["Database Layer (Active)"]
+        EventModel --> MongoDB[("MongoDB Database")]
+        UserModel -.-> MongoDB
+    end
+
+    subgraph QueuePipeline ["Asynchronous Processing Pipeline (Planned)"]
+        EventCtrl -.->|High-volume Offloading| BullMQ["BullMQ Queue"]
+        BullMQ -.-> Redis[("Redis Broker")]
+        Redis -.-> Workers["Background Workers"]
+        Workers -.->|Batch Summaries & Analytics| MongoDB
+    end
+```
 
 ---
 
 ## 🚀 Tech Stack
 
+### Active & Core
+
 - **Runtime Environment:** Node.js (CommonJS)
 - **Web Framework:** Express.js (v5)
 - **Database & ODM:** MongoDB via Mongoose (v9)
-- **Authentication & Security:** JSON Web Tokens (`jsonwebtoken`), Password Hashing (`bcrypt`), String/Email Validation (`validator`)
-- **Background Jobs & Queues (Planned):** BullMQ with Redis
+- **Security & Utilities:** `bcrypt` (password hashing), `jsonwebtoken` (JWT creation), `validator` (schema string/email validation)
 - **Environment Management:** `dotenv`
-- **Development Tooling:** Nodemon
+- **Development Tooling:** `nodemon`
 - **Code Quality & Formatting:** ESLint & Prettier
+
+### Planned / Roadmap
+
+- **Message Broker & Task Queue:** BullMQ with Redis (for asynchronous event buffering and batch ingestion)
+- **Worker Processes:** Dedicated background consumers for metric aggregation and traffic summaries
 
 ---
 
@@ -32,35 +68,55 @@ Event-And-Traffic-Monitoring-System/
     ├── config/
     │   └── db.js             # Async Mongoose database connection setup
     ├── controllers/
-    │   ├── authController.js # User authentication route handlers
+    │   ├── authController.js # Auth route handlers (In Progress)
     │   └── eventController.js# Event creation, querying, pagination & filtering
-    ├── jobs/                 # Queue job definitions (planned)
-    ├── middlewares/          # Validation, auth & rate limiting middleware (planned)
+    ├── middleware/           # Auth & validation middleware (Planned / In Progress)
     ├── models/
     │   ├── eventModel.js     # Mongoose schema for system and user events
-    │   └── userModel.js      # Mongoose schema for user accounts & auth
+    │   └── userModel.js      # Mongoose schema for user accounts (with bcrypt hashing)
+    ├── queues/               # BullMQ queue producers (Planned)
     ├── routes/
     │   └── eventRoutes.js    # Express route declarations for events
+    ├── services/             # Core business logic & transformations (Planned)
     ├── utils/
     │   └── signToken.js      # JWT token signing helper
-    └── workers/              # Background processing workers (planned)
+    └── workers/              # Background processing workers (Planned)
 ```
 
 ---
 
-## 📌 Features & Progress
+## 📌 Current Status & Development Roadmap
 
-- **Express Server Setup:** Modular Express v5 application bootstrap with JSON body parsing.
-- **Database Integration:** Resilient, asynchronous Mongoose connection with error handling and process safety.
-- **User Management & Security:**
-  - `User` schema with field validations (email format checking via `validator`).
-  - Pre-save Mongoose middleware for automatic password hashing using `bcrypt`.
-  - JWT token generation utility (`signToken`) with configurable expiration.
-- **System & Traffic Event Logging:**
-  - `Event` schema supporting event classification, severity levels, summary flags, timestamps, and optional user attribution.
-  - Creation of system events (`POST /api/v1/events`).
-  - Event retrieval with **pagination** (`page`, `limit`) and **filtering** by `severity` and `eventType` (`GET /api/v1/events`).
-- **Health Check Endpoint:** `GET /api/v1/health` for uptime and deployment monitoring.
+### ✅ Implemented Features
+
+- **Server Bootstrap & Health Monitoring:** Express v5 application lifecycle with `GET /api/v1/health`.
+- **Database Persistence:** Asynchronous MongoDB connection with connection event handling and error safety.
+- **Event Logging API:**
+  - `POST /api/v1/events`: Ingests and validates event records into MongoDB.
+  - `GET /api/v1/events`: Queries event logs with **pagination** (`page`, `limit`) and **filtering** (`severity`, `eventType`).
+- **Data Models:**
+  - `Event` schema supporting event categories, source tracking, severity levels, and summary tracking flags.
+  - `User` schema featuring email validation and pre-save password hashing.
+- **Token Utility:** Standardized JWT signing helper (`signToken.js`) using HMAC-SHA256.
+
+### 🚧 In Progress & Planned Roadmap
+
+- **Authentication Endpoints & Middleware:** Completing `authController.js` (signup/login handlers) and JWT validation route middleware (`protect`).
+- **Asynchronous Queue Integration:** Offloading high-throughput event logging to BullMQ & Redis queues.
+- **Background Event Summarization:** Background workers to aggregate logs and toggle `isSummarized` flags.
+- **Rate Limiting & Advanced Validation:** Express rate limiting for abuse prevention.
+
+---
+
+## 🔐 Authentication & Security Status
+
+| Component                                  | Status               | Details                                                                                                                 |
+| :----------------------------------------- | :------------------- | :---------------------------------------------------------------------------------------------------------------------- |
+| **User Model (`userModel.js`)**            | **Implemented**      | Strict schema validation with `validator.isEmail`, pre-save `bcrypt` hashing (salt rounds: 12), and admin flag support. |
+| **Token Generation (`signToken.js`)**      | **Implemented**      | Helper creating signed JWT tokens configured with `JWT_SECRET` and `JWT_EXPIRES_IN`.                                    |
+| **Auth Controllers (`authController.js`)** | **In Progress**      | Registration (`/signup`) and Login (`/login`) controller handlers under development.                                    |
+| **Route Protection Middleware**            | **Planned**          | JWT verification middleware (`protect`) to authenticate incoming requests for secure routes.                            |
+| **Current Route Access**                   | **Public (Interim)** | All current endpoints (`/api/v1/events`, `/api/v1/health`) are publicly accessible until auth middleware is mounted.    |
 
 ---
 
@@ -70,65 +126,23 @@ Event-And-Traffic-Monitoring-System/
 
 | Field          | Type       | Validation / Options                                                       | Description                                 |
 | :------------- | :--------- | :------------------------------------------------------------------------- | :------------------------------------------ |
-| `eventType`    | `String`   | **Required**, Enum: `['Login', 'SignUp', 'Server Crash', 'Traffic Spike']` | Type of system or user event                |
+| `eventType`    | `String`   | **Required**, Enum: `['Login', 'SignUp', 'Server Crash', 'Traffic Spike']` | Categorization of the event                 |
 | `source`       | `String`   | **Required**                                                               | Source module or service emitting the event |
-| `message`      | `String`   | **Required**                                                               | Detailed event message or description       |
-| `severity`     | `String`   | **Required**, Enum: `['Critical', 'High', 'Medium', 'Low']`               | Severity level of the event                 |
-| `isSummarized` | `Boolean`  | **Required**, Default: `false`                                             | Flag for background aggregation/summaries   |
-| `submittedBy`  | `ObjectId` | Ref: `User` (Optional)                                                     | ID of the user associated with the event    |
-| `createdAt`    | `Date`     | Auto-generated timestamp                                                   | Timestamp when event was recorded           |
-| `updatedAt`    | `Date`     | Auto-generated timestamp                                                   | Timestamp when event was last updated       |
+| `message`      | `String`   | **Required**                                                               | Descriptive event message                   |
+| `severity`     | `String`   | **Required**, Enum: `['Critical', 'High', 'Medium', 'Low']`                | Severity level of the event                 |
+| `isSummarized` | `Boolean`  | **Required**, Default: `false`                                             | Aggregation flag for background workers     |
+| `submittedBy`  | `ObjectId` | Ref: `User` (Optional)                                                     | Reference to associated user                |
+| `createdAt`    | `Date`     | Auto-generated timestamp                                                   | Timestamp when event was created            |
+| `updatedAt`    | `Date`     | Auto-generated timestamp                                                   | Timestamp when event was last modified      |
 
 ### 2. User Model (`src/models/userModel.js`)
 
-| Field      | Type      | Validation / Options                  | Description                                |
-| :--------- | :-------- | :------------------------------------ | :----------------------------------------- |
-| `fullName` | `String`  | **Required**                          | Full name of the user                      |
-| `email`    | `String`  | **Required**, Unique, Email Validator | User email address                         |
-| `password` | `String`  | **Required**, Min length: 8           | Password (automatically hashed via bcrypt) |
-| `isAdmin`  | `Boolean` | Default: `false`                      | Administrative privilege flag              |
-
----
-
-## ⚙️ Getting Started
-
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (v18+ recommended)
-- [MongoDB](https://www.mongodb.com/) (Local instance or MongoDB Atlas cluster)
-
-### 1. Installation
-
-Clone the repository and install the dependencies:
-
-```bash
-npm install
-```
-
-### 2. Environment Setup
-
-Create a `.env` file in the root directory and configure the environment variables:
-
-```env
-PORT=3000
-MONGO_URI=mongodb://localhost:27017/event_monitoring_db
-JWT_SECRET=your_super_secret_jwt_key_here
-JWT_EXPIRES_IN=90d
-```
-
-### 3. Running the Application
-
-- **Development Mode (with auto-reload):**
-
-  ```bash
-  npm run dev
-  ```
-
-- **Production Mode:**
-
-  ```bash
-  npm start
-  ```
+| Field      | Type      | Validation / Options                  | Description                                  |
+| :--------- | :-------- | :------------------------------------ | :------------------------------------------- |
+| `fullName` | `String`  | **Required**                          | Full name of the user                        |
+| `email`    | `String`  | **Required**, Unique, Email Validator | User email address                           |
+| `password` | `String`  | **Required**, Min length: 8           | Password (automatically hashed via `bcrypt`) |
+| `isAdmin`  | `Boolean` | Default: `false`                      | Administrator role flag                      |
 
 ---
 
@@ -136,17 +150,18 @@ JWT_EXPIRES_IN=90d
 
 ### Base URL: `/api/v1`
 
-| Method | Endpoint   | Description                                    | Auth Required |
-| :----- | :--------- | :--------------------------------------------- | :------------ |
-| `GET`  | `/health`  | Health check / server status                   | No            |
-| `POST` | `/events`  | Log / create a new event                       | No            |
-| `GET`  | `/events`  | Retrieve paginated events with optional filter | No            |
+| Method | Endpoint  | Description                                   | Auth Status             |
+| :----- | :-------- | :-------------------------------------------- | :---------------------- |
+| `GET`  | `/health` | Server uptime and health check                | Public                  |
+| `POST` | `/events` | Create and store a new event record           | Public _(Auth Planned)_ |
+| `GET`  | `/events` | Retrieve paginated and filtered event records | Public _(Auth Planned)_ |
 
 ---
 
 ### Endpoint Details
 
 #### 1. Health Check
+
 - **URL:** `GET /api/v1/health`
 - **Response:** `200 OK`
   ```json
@@ -157,6 +172,7 @@ JWT_EXPIRES_IN=90d
   ```
 
 #### 2. Create an Event
+
 - **URL:** `POST /api/v1/events`
 - **Headers:** `Content-Type: application/json`
 - **Request Body Example:**
@@ -188,12 +204,13 @@ JWT_EXPIRES_IN=90d
   ```
 
 #### 3. Get All Events (with Pagination & Filtering)
+
 - **URL:** `GET /api/v1/events`
 - **Query Parameters:**
-  - `page` (optional, default: `1`): Page number.
-  - `limit` (optional, default: `10`): Number of events per page.
-  - `severity` (optional): Filter by severity level (`Critical`, `High`, `Medium`, `Low`).
-  - `eventType` (optional): Filter by event type (`Login`, `SignUp`, `Server Crash`, `Traffic Spike`).
+  - `page` _(optional, default: `1`)_: Page number.
+  - `limit` _(optional, default: `10`)_: Number of items per page.
+  - `severity` _(optional)_: Filter by `Critical`, `High`, `Medium`, or `Low`.
+  - `eventType` _(optional)_: Filter by `Login`, `SignUp`, `Server Crash`, or `Traffic Spike`.
 - **Example Request:** `GET /api/v1/events?page=1&limit=5&severity=Critical`
 - **Response:** `200 OK`
   ```json
@@ -219,6 +236,45 @@ JWT_EXPIRES_IN=90d
 
 ---
 
+## ⚙️ Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18+ recommended)
+- [MongoDB](https://www.mongodb.com/) (Local instance or MongoDB Atlas)
+
+### 1. Installation
+
+```bash
+git clone https://github.com/theprogrammer141/event-and-traffic-monitoring-system.git
+cd Event-And-Traffic-Monitoring-System
+npm install
+```
+
+### 2. Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+PORT=3000
+MONGO_URI=mongodb://localhost:27017/event_monitoring_db
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_EXPIRES_IN=90d
+```
+
+### 3. Running the Application
+
+- **Development Mode (with auto-reload):**
+  ```bash
+  npm run dev
+  ```
+- **Production Mode:**
+  ```bash
+  npm start
+  ```
+
+---
+
 ## 🛠️ Code Quality & Utility Scripts
 
 | Command                | Description                              |
@@ -226,7 +282,7 @@ JWT_EXPIRES_IN=90d
 | `npm run dev`          | Start development server using `nodemon` |
 | `npm start`            | Run production server                    |
 | `npm run lint`         | Run ESLint checks                        |
-| `npm run lint:fix`     | Automatically fix ESLint errors          |
+| `npm run lint:fix`     | Automatically fix ESLint issues          |
 | `npm run format`       | Format codebase using Prettier           |
 | `npm run format:check` | Check code formatting compliance         |
 
@@ -234,4 +290,4 @@ JWT_EXPIRES_IN=90d
 
 ## 📜 License
 
-This project is licensed under the **ISC License**.
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)** - see the [LICENSE](LICENSE) file for details.
