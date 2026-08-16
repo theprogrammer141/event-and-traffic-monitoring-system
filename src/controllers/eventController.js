@@ -32,10 +32,10 @@ exports.getAllEvents = async (req, res) => {
   const skip = (page - 1) * limit;
 
   //Filtering
-  const filter = {}
-  
-  if(req.query.severity) filter.severity = req.query.severity;
-  if(req.query.eventType) filter.eventType = req.query.eventType; 
+  const filter = {};
+
+  if (req.query.severity) filter.severity = req.query.severity;
+  if (req.query.eventType) filter.eventType = req.query.eventType;
 
   try {
     const events = await Event.find(filter).skip(skip).limit(limit);
