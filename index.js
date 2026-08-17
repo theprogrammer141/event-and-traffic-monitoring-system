@@ -4,12 +4,14 @@ dotenv.config();
 const connectDB = require('./src/config/db');
 
 const eventRoutes = require('./src/routes/eventRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 
 app.use(express.json());
 
 app.use('/api/v1/events', eventRoutes);
+app.use('/api/v1/auth', authRoutes);
 
 const PORT = process.env.PORT || '3001';
 
