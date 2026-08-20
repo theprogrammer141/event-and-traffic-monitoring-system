@@ -1,7 +1,7 @@
 const Event = require('./../models/eventModel');
 
 exports.createEvent = async (req, res) => {
-  const { eventType, source, message, severity } = req.body;
+  const { eventType, source, message, severity, submittedBy } = req.body;
 
   try {
     const newEvent = await Event.create({
@@ -9,6 +9,7 @@ exports.createEvent = async (req, res) => {
       source,
       message,
       severity,
+      submittedBy: req.user._id,
     });
 
     res.status(201).json({
