@@ -1,7 +1,7 @@
 const Event = require('./../models/eventModel');
 
 exports.createEvent = async (req, res) => {
-  const { eventType, source, message, severity, submittedBy } = req.body;
+  const { eventType, source, message, severity } = req.body;
 
   try {
     const newEvent = await Event.create({
