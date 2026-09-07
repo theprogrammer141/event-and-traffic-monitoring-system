@@ -1,10 +1,12 @@
 const Event = require('./../models/eventModel');
+const eventQueue = require('./../config/eventQueue');
 
 exports.createEvent = async (req, res) => {
   const { eventType, source, message, severity } = req.body;
 
   try {
-    const newEvent = await Event.create({
+    // add a job to eventQueue with the event data + req.user._id as submittedBy
+    const processedEvent = await eventQueue.add('event', {
       eventType,
       source,
       message,
@@ -12,16 +14,17 @@ exports.createEvent = async (req, res) => {
       submittedBy: req.user._id,
     });
 
-    res.status(201).json({
+    // respond 202 with something like { status, message, jobId }
+    res.status(202).json({
       status: 'success',
-      data: {
-        event: newEvent,
-      },
+      message: 'Event added to queue successfully!',
+      jobId: processedEvent.id,
     });
   } catch (error) {
+    //If the redis is down, send 500
     res.status(500).json({
       status: 'fail',
-      message: 'Document creation failed',
+      message: 'Queue temporarily unavailable. Try again later.',
     });
   }
 };
