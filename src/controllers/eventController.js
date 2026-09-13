@@ -12,6 +12,13 @@ exports.createEvent = async (req, res) => {
       message,
       severity,
       submittedBy: req.user._id,
+    }, 
+    {
+      attempts: 3,
+      backoff:{
+        type: "fixed",
+        delay: 5000,
+      }
     });
 
     // respond 202 with something like { status, message, jobId }
