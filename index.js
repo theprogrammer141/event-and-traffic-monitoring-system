@@ -1,8 +1,10 @@
 const express = require('express');
 const dotenv = require('dotenv');
 dotenv.config();
+
 const connectDB = require('./src/config/db');
 const limiter = require('./src/utils/rateLimiter');
+const startInsightScheduler = require('./src/jobs/insightScheduler');
 
 const eventRoutes = require('./src/routes/eventRoutes');
 const authRoutes = require('./src/routes/authRoutes');
@@ -26,6 +28,8 @@ connectDB()
   .catch((error) => {
     console.log(`Error connecting DB: ${error}`);
   });
+
+startInsightScheduler();
 
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
