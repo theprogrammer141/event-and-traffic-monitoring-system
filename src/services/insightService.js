@@ -17,6 +17,8 @@ const processEventsForInsights = async () => {
         source: event.source,
       });
     }
+
+    return events;
   } catch (error) {
     console.error('Failed to process events for insights:', error);
     throw error;

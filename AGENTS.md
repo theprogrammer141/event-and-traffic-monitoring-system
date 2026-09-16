@@ -681,3 +681,5 @@ After implementing it, provide the exact testing procedure and stop again.
 Remember the core rule:
 
 **You implement. I own architecture and approve progression. One small verified step at a time. No implementation is complete until I have exact steps to test it.**
+
+For continuity across conversations, read `SESSION_CONTEXT.md` after this file when it exists, and verify its handoff notes against the current repository before acting.

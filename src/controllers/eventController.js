@@ -6,20 +6,23 @@ exports.createEvent = async (req, res) => {
 
   try {
     // add a job to eventQueue with the event data + req.user._id as submittedBy
-    const processedEvent = await eventQueue.add('event', {
-      eventType,
-      source,
-      message,
-      severity,
-      submittedBy: req.user._id,
-    }, 
-    {
-      attempts: 3,
-      backoff:{
-        type: "fixed",
-        delay: 5000,
+    const processedEvent = await eventQueue.add(
+      'event',
+      {
+        eventType,
+        source,
+        message,
+        severity,
+        submittedBy: req.user._id,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: 'fixed',
+          delay: 5000,
+        },
       }
-    });
+    );
 
     // respond 202 with something like { status, message, jobId }
     res.status(202).json({
@@ -45,8 +48,12 @@ exports.getAllEvents = async (req, res) => {
   //Filtering
   const filter = {};
 
-  if (req.query.severity) filter.severity = req.query.severity;
-  if (req.query.eventType) filter.eventType = req.query.eventType;
+  if (req.query.severity) {
+    filter.severity = req.query.severity;
+  }
+  if (req.query.eventType) {
+    filter.eventType = req.query.eventType;
+  }
 
   try {
     const events = await Event.find(filter).skip(skip).limit(limit);

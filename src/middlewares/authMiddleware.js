@@ -22,7 +22,7 @@ exports.protect = async (req, res, next) => {
     // 5. if valid, find the User by the id in the decoded payload
     if (verifyToken) {
       const userId = verifyToken.id;
-      let user = await User.findOne({ _id: userId });
+      const user = await User.findOne({ _id: userId });
       // 6. attach that user to req.user
       req.user = user;
     }
