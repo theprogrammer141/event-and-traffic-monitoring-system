@@ -1,11 +1,20 @@
 const Event = require('../models/eventModel');
+const Insight = require('../models/insightModel');
 
 const processEventsForInsights = async () => {
   try {
-    const events = await Event.find({
-      severity: { $in: ['High', 'Critical'] },
-      isSummarized: false,
-    });
+    const events = await Event.aggregate([
+      {
+        $lookup: {
+          from: Insight.collection.name,
+          localField: '_id',
+          foreignField: 'event',
+          as: 'existingInsights',
+        },
+      },
+      { $match: { existingInsights: { $eq: [] } } },
+      { $project: { existingInsights: 0 } },
+    ]);
 
     console.log(`Found ${events.length} events eligible for AI analysis`);
 

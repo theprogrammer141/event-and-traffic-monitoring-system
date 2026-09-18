@@ -16,6 +16,7 @@
     "start": "node index.js",
     "start:worker": "nodemon worker.js",
     "dev": "nodemon index.js",
+    "migrate:remove-is-summarized": "node src/migrations/removeIsSummarized.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

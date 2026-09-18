@@ -12,7 +12,7 @@ const run = async () => {
   assert.ok(process.env.MONGO_URI, 'MONGO_URI must be configured');
 
   // Override the URI database so fixtures never touch the application database.
-  const databaseName = `insight_eligibility_test_${randomUUID().replaceAll('-', '')}`;
+  const databaseName = `ie_${randomUUID().replaceAll('-', '')}`;
   let connected = false;
 
   try {
@@ -26,21 +26,38 @@ const run = async () => {
     // Finish model initialization before testing or removing the temporary database.
     await Promise.all([Event.init(), Insight.init()]);
 
-    const fixtures = [];
+    const cases = [];
     for (const severity of ['High', 'Critical', 'Medium', 'Low']) {
       for (const isSummarized of [false, true]) {
-        fixtures.push({
-          eventType: 'Server Crash',
-          source: 'insight-eligibility-test',
-          message: `Fixture: ${severity}, summarized=${isSummarized}`,
-          severity,
-          isSummarized,
-        });
+        for (const hasInsight of [false, true]) {
+          cases.push({ severity, isSummarized, hasInsight });
+        }
       }
     }
 
-    const inserted = await Event.insertMany(fixtures);
-    const expectedIds = inserted.slice(0, 4).filter((event) => !event.isSummarized);
+    const fixtures = cases.map(({ severity, isSummarized, hasInsight }) => ({
+      eventType: 'Server Crash',
+      source: 'insight-eligibility-test',
+      message: `Fixture: ${severity}, summarized=${isSummarized}, insight=${hasInsight}`,
+      severity,
+      isSummarized,
+    }));
+    const insertion = await Event.collection.insertMany(fixtures);
+    const inserted = fixtures.map((fixture, index) => ({
+      ...fixture,
+      _id: insertion.insertedIds[index],
+    }));
+    const eventsWithInsights = inserted.filter((event, index) => cases[index].hasInsight);
+    await Insight.insertMany(
+      eventsWithInsights.map((event) => ({
+        event: event._id,
+        summary: `Existing insight for ${event.message}`,
+        recommendedActions: [],
+        model: 'synthetic-test-model',
+      }))
+    );
+
+    const expectedEvents = inserted.filter((event, index) => !cases[index].hasInsight);
     const ids = (events) => events.map((event) => event._id.toString()).sort();
     const snapshot = async () => ({
       events: await Event.find().sort({ _id: 1 }).lean(),
@@ -48,13 +65,15 @@ const run = async () => {
     });
 
     const beforeSelection = await snapshot();
-    assert.deepEqual(ids(await processEventsForInsights()), ids(expectedIds));
+    assert.deepEqual(ids(await processEventsForInsights()), ids(expectedEvents));
     assert.deepEqual(await snapshot(), beforeSelection, 'Selection must not change database state');
-    console.log('[eligibility-test] PASS: only unsummarized High/Critical events returned');
-    console.log('[eligibility-test] PASS: events unchanged and no insights created');
+    console.log(
+      '[eligibility-test] PASS: every event without an insight returned, regardless of severity or legacy isSummarized value'
+    );
+    console.log('[eligibility-test] PASS: events and insights remained unchanged');
 
-    // Remove only the eligible fixtures, leaving six ineligible records behind.
-    await Event.deleteMany({ _id: { $in: expectedIds.map((event) => event._id) } });
+    // Remove only the eligible fixtures, leaving events that already have insights.
+    await Event.deleteMany({ _id: { $in: expectedEvents.map((event) => event._id) } });
     const beforeNoMatches = await snapshot();
     assert.deepEqual(await processEventsForInsights(), []);
     assert.deepEqual(await snapshot(), beforeNoMatches, 'No-match selection must not change state');

@@ -115,3 +115,6 @@ desktop.ini
 .prettiercache
 .stylelintcache
 .npm
+
+#Other
+SESSION_CONTEXT.md

@@ -21,11 +21,6 @@ const eventSchema = Schema(
       enum: ['Critical', 'High', 'Medium', 'Low'],
       required: true,
     },
-    isSummarized: {
-      type: Boolean,
-      default: false,
-      required: true,
-    },
     submittedBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
