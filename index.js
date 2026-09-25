@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 dotenv.config();
 
+const cors = require('cors');
 const connectDB = require('./src/config/db');
 const limiter = require('./src/utils/rateLimiter');
 const startInsightScheduler = require('./src/jobs/insightScheduler');
@@ -12,6 +13,7 @@ const insightRoutes = require('./src/routes/insightRoutes');
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 app.use(limiter);
 
