@@ -23,10 +23,18 @@ exports.protect = async (req, res, next) => {
     if (verifyToken) {
       const userId = verifyToken.id;
       const user = await User.findOne({ _id: userId });
+
+      if (!user) {
+        return res.status(401).json({
+          status: 'fail',
+          message: 'The user belonging to this token no longer exists.',
+        });
+      }
       // 6. attach that user to req.user
       req.user = user;
+      // 7. call next()
+      next();
     }
-    next();
   } catch (error) {
     // 4. if verify fails, return 401 (catch block)
     return res.status(401).json({
@@ -34,6 +42,4 @@ exports.protect = async (req, res, next) => {
       message: `Cannot verify: ${error}`,
     });
   }
-
-  // 7. call next()
 };

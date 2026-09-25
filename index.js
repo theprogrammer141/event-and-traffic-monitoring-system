@@ -8,6 +8,7 @@ const startInsightScheduler = require('./src/jobs/insightScheduler');
 
 const eventRoutes = require('./src/routes/eventRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const insightRoutes = require('./src/routes/insightRoutes');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(limiter);
 
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/insights', insightRoutes);
 
 const PORT = process.env.PORT || '3001';
 

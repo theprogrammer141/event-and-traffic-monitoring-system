@@ -48,6 +48,8 @@ exports.getAllEvents = async (req, res) => {
   //Filtering
   const filter = {};
 
+  filter.submittedBy = req.user._id;
+
   if (req.query.severity) {
     filter.severity = req.query.severity;
   }
