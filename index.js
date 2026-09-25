@@ -24,12 +24,12 @@ connectDB()
     app.listen(PORT, () => {
       console.log(`App is listening on port: ${PORT}`);
     });
+
+    startInsightScheduler();
   })
   .catch((error) => {
     console.log(`Error connecting DB: ${error}`);
   });
-
-startInsightScheduler();
 
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
