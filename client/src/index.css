@@ -128,3 +128,48 @@
     @apply font-sans;
     }
 }
+
+/* Custom Design Tokens & Utilities */
+:root {
+  --color-brand: #6366f1;
+  --color-brand-glow: rgba(99, 102, 241, 0.25);
+  --severity-critical: #f43f5e;
+  --severity-critical-glow: rgba(244, 63, 94, 0.25);
+  --severity-high: #f59e0b;
+  --severity-medium: #06b6d4;
+  --severity-low: #64748b;
+  --status-online: #10b981;
+}
+
+/* Glassmorphism primitives */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* Tabular numbers for dynamic metrics (Vercel guidelines) */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Focus-visible high-contrast ring replacement (Vercel guidelines) */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #080c14, 0 0 0 4px var(--color-brand);
+}
+
+/* Reduced motion accessibility (Vercel guidelines) */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
